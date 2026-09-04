@@ -1,0 +1,22 @@
+{
+  "name": "airsense",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AirSense — Personalized Weather & AQI Health Advisory. Live conditions + health profile -> AI-generated plain-English guidance.",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "postinstall": "npm install --prefix client && npm install --prefix server",
+    "install:all": "npm install && npm install --prefix client && npm install --prefix server",
+    "build": "npm run build --prefix client",
+    "start": "npm run start --prefix server",
+    "preview": "npm run preview --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

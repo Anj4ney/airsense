@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AirSense — Personalized Weather &amp; AQI Health Advisory</title>
+    <meta
+      name="description"
+      content="Live, location-based weather and air quality with AI-generated advisories personalized to your health profile."
+    />
+    <meta name="theme-color" content="#0a0e17" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c8cff' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M4 8h8.5a2.5 2.5 0 1 0-2.4-3.2'/%3E%3Cpath d='M4 12h12.5a3 3 0 1 1-2.9 3.8'/%3E%3Cpath d='M4 16h6'/%3E%3C/svg%3E"
+    />
+    <!-- Inter: clean sans pairing — body 400/500, headings 700/800 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Dark mode is the default — only remove it if the user saved "light".
+      try {
+        if (localStorage.getItem('airsense.theme') === 'light') {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        /* private mode etc. — keep dark */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
