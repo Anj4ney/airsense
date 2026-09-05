@@ -15,9 +15,11 @@ import { cn } from '../lib/utils';
  * Clicking anywhere re-fetches weather + AQI for that exact point.
  */
 
-const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const CARTO_LIGHT = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const CARTO_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const CARTO_SUBDOMAINS = 'abcd';
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 /** Keep the view centered on the active location as it changes. */
 function Recenter({ lat, lon }) {
@@ -102,15 +104,13 @@ export default function MapView({ location, aqi, theme, onPick, loading = false 
         className="h-full w-full"
         attributionControl
       >
-        {/* key={theme} forces a remount so the dark/light filter class is
-            re-applied — react-leaflet never re-applies className after creation */}
+        {/* key={theme} forces a clean remount when switching basemaps */}
         <TileLayer
-          key={`osm-${theme}`}
-          url={OSM_TILES}
+          key={`carto-${theme}`}
+          url={theme === 'dark' ? CARTO_DARK : CARTO_LIGHT}
           attribution={ATTRIBUTION}
-          subdomains="abc"
-          maxZoom={19}
-          className={theme === 'dark' ? 'osm-tiles-dark' : undefined}
+          subdomains={CARTO_SUBDOMAINS}
+          maxZoom={20}
         />
         <Recenter lat={location.lat} lon={location.lon} />
         <ClickCatcher onPick={onPick} />
