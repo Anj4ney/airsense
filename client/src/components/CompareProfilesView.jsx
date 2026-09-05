@@ -23,7 +23,7 @@ function SidePanel({ options, selectedId, onSelect, advisory, loading, accent, s
           value={selectedId}
           onChange={(e) => onSelect(e.target.value)}
           aria-label={`Profile for ${sideLabel}`}
-          className="bg-ink border border-white/[0.1] rounded-lg text-sm px-3 py-1.5 text-strong outline-none focus:ring-2 focus:ring-accent/50 max-w-[70%]"
+          className="select-surface rounded-lg text-sm px-3 py-1.5 text-strong outline-none focus:ring-2 focus:ring-accent/50 max-w-[70%]"
         >
           {options.map((o) => (
             <option key={o.id} value={o.id}>
