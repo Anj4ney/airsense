@@ -1,69 +1,58 @@
 import { useEffect, useRef, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { getAQILevel, aqiRGBA } from '../lib/aqiTheme';
 import { MapSkeleton } from './SkeletonLoader';
 import { cn } from '../lib/utils';
 
 /**
- * MapView — the dramatic centerpiece: a full-height map showing India's
- * boundaries the way the Government of India requires them to be shown
- * (Jammu & Kashmir, Ladakh, Arunachal Pradesh, etc. per the official
- * Survey of India depiction) with a pulsing pin colored by the current
- * AQI severity, plus a floating translucent "tracking" info card overlaid
- * near the focal point (location / live AQI / status).
- * Clicking anywhere re-fetches weather + AQI for that exact point.
+ * MapView — the dramatic centerpiece: a full-height map with a pulsing pin
+ * colored by the current AQI severity, plus a floating translucent
+ * "tracking" info card overlaid near the focal point (location / live AQI /
+ * status). Clicking anywhere re-fetches weather + AQI for that exact point.
  *
- * Powered by Mappls (MapmyIndia) — India's own map provider, which is
- * why the borders are compliant. No global/free provider (Google, Esri,
- * OpenStreetMap, Carto, ...) follows India's official boundary rules,
- * so this is the trade-off for correct borders: it needs a free Mappls
- * API key. Get one at https://auth.mappls.com/console (Web SDK access,
- * free tier is generous for a personal/small project) and put it in
- * client/.env as:
+ * Powered by OpenFreeMap (https://openfreemap.org) — a free, keyless,
+ * unlimited-usage vector tile host for OpenMapTiles/OpenStreetMap data,
+ * rendered with MapLibre GL JS. No signup, no API key, no billing, ever.
  *
- *   VITE_MAPPLS_API_KEY=your_key_here
+ * LABEL LANGUAGE: OpenMapTiles' default styles show "name:latin\nname:nonlatin"
+ * for places whose native OSM name is in a non-Latin script (e.g. many
+ * Chinese, Russian, Middle-Eastern places) — that's the two-line labels you
+ * sometimes see on generic OSM maps. On `load`, we walk every symbol layer
+ * in the style and force its `text-field` to just `name_en` (falling back to
+ * `name` where no English translation exists in OSM data), so every label
+ * renders in a single English line everywhere in the world.
  *
- * NOTE ON THEMING: Mappls's default vector style is a single fixed look
- * (not a separate "dark" style we can request from their API in this
- * SDK version). To still respect the app's dark/light toggle, we apply
- * a CSS filter that recolors the canvas towards a dark look (see
- * `.map-canvas-dark` in index.css). It's a reasonable approximation, not
- * a true dark map style — Mappls does support custom styles via their
- * Console, so if you want a pixel-perfect dark style later, that's the path.
+ * TRADE-OFF vs. Mappls: this uses OpenStreetMap's standard border rendering,
+ * not the Government of India's official boundary depiction (Kashmir,
+ * Arunachal Pradesh, etc. per Survey of India). That compliance-specific
+ * rendering is only available from India-based providers like Mappls, which
+ * require a free API key and a heavier SDK integration. This version trades
+ * that for zero setup — no key, no console, no signup required at all.
  */
 
-const MAPPLS_ACCESS_TOKEN = import.meta.env.VITE_MAPPLS_API_KEY;
-const MAPPLS_SDK_SRC_BASE = 'https://sdk.mappls.com/map/sdk/web?v=3.0&layer=vector';
+const ENGLISH_NAME_EXPR = ['coalesce', ['get', 'name_en'], ['get', 'name']];
 
-// Module-level singleton so multiple MapView mounts (or re-renders) never
-// inject the SDK <script> tag more than once.
-let mapplsSdkPromise = null;
-function loadMapplsSdk(accessToken) {
-  if (window.mappls) return Promise.resolve(window.mappls);
-  if (mapplsSdkPromise) return mapplsSdkPromise;
+const STYLE_URLS = {
+  light: 'https://tiles.openfreemap.org/styles/liberty',
+  dark: 'https://tiles.openfreemap.org/styles/dark',
+};
 
-  mapplsSdkPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = `${MAPPLS_SDK_SRC_BASE}&access_token=${accessToken}`;
-    script.async = true;
-    script.onload = () => {
-      // The SDK attaches itself to window.mappls once ready.
-      if (window.mappls) resolve(window.mappls);
-      else reject(new Error('Mappls SDK loaded but window.mappls is missing'));
-    };
-    script.onerror = () => reject(new Error('Failed to load the Mappls SDK script'));
-    document.head.appendChild(script);
-  });
+const ATTRIBUTION =
+  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors © <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>';
 
-  return mapplsSdkPromise;
-}
-
-/** Pulls {lat, lng} out of a Mappls map click event, defensively — the
- *  exact event shape isn't pinned down across SDK builds. */
-function extractLatLng(e) {
-  const src = e?.lngLat || e?.latlng || e?.lnglat || e || {};
-  const lat = src.lat ?? src.latitude ?? e?.lat;
-  const lng = src.lng ?? src.lon ?? src.longitude ?? e?.lng;
-  return lat != null && lng != null ? { lat, lng } : null;
+/** Force every label layer in the loaded style to render in English. */
+function forceEnglishLabels(map) {
+  const layers = map.getStyle()?.layers || [];
+  for (const layer of layers) {
+    if (layer.type === 'symbol' && layer.layout && layer.layout['text-field'] !== undefined) {
+      try {
+        map.setLayoutProperty(layer.id, 'text-field', ENGLISH_NAME_EXPR);
+      } catch {
+        // Some layers may not support this property at runtime — safe to skip.
+      }
+    }
+  }
 }
 
 /** Floating translucent info card over the marker area — pure overlay,
@@ -102,114 +91,84 @@ function FloatingInfoCard({ location, aqi, level }) {
   );
 }
 
-/** Shown instead of the map when no Mappls key is configured, so the app
- *  fails loudly with instructions rather than silently rendering nothing. */
-function MissingKeyNotice() {
-  return (
-    <div className="h-[360px] sm:h-[420px] lg:h-[480px] w-full rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col items-center justify-center gap-2 text-center px-6">
-      <p className="text-sm font-semibold text-strong">Map needs a Mappls API key</p>
-      <p className="text-xs text-muted max-w-xs">
-        Add <code className="text-accent">VITE_MAPPLS_API_KEY</code> to <code className="text-accent">client/.env</code>.
-        Get a free key at{' '}
-        <a
-          className="underline text-accent"
-          href="https://auth.mappls.com/console"
-          target="_blank"
-          rel="noreferrer"
-        >
-          auth.mappls.com/console
-        </a>
-        .
-      </p>
-    </div>
-  );
-}
-
 export default function MapView({ location, aqi, theme, onPick, loading = false }) {
   const level = getAQILevel(aqi);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
-  const mapplsRef = useRef(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
 
-  const [status, setStatus] = useState(MAPPLS_ACCESS_TOKEN ? 'loading' : 'missing-key');
+  const [status, setStatus] = useState('loading');
 
-  // Create the map once, after the SDK script has loaded.
+  // Create (and recreate on theme change — different style URL) the map.
   useEffect(() => {
-    if (!MAPPLS_ACCESS_TOKEN || !location || !containerRef.current) return;
-    let cancelled = false;
+    if (!location || !containerRef.current) return;
+    setStatus('loading');
 
-    loadMapplsSdk(MAPPLS_ACCESS_TOKEN)
-      .then((mappls) => {
-        if (cancelled || mapRef.current) return;
-        mapplsRef.current = mappls;
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: theme === 'dark' ? STYLE_URLS.dark : STYLE_URLS.light,
+      center: [location.lon, location.lat],
+      zoom: 10,
+      attributionControl: false,
+    });
+    mapRef.current = map;
 
-        const map = new mappls.Map(containerRef.current, {
-          center: { lat: location.lat, lng: location.lon },
-          zoom: 10,
-        });
+    map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: ATTRIBUTION }));
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+    map.scrollZoom.disable();
 
-        map.addListener('load', () => {
-          if (cancelled) return;
-          mapRef.current = map;
-          setStatus('ready');
-        });
+    map.on('load', () => {
+      forceEnglishLabels(map);
+      setStatus('ready');
+    });
 
-        map.addListener('click', (e) => {
-          const picked = extractLatLng(e);
-          if (picked) onPickRef.current?.(picked.lat, picked.lng);
-        });
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) setStatus('error');
-      });
+    map.on('click', (e) => {
+      onPickRef.current?.(e.lngLat.lat, e.lngLat.lng);
+    });
+
+    map.on('error', (e) => {
+      console.error(e?.error || e);
+      setStatus('error');
+    });
 
     return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      markerRef.current = null;
+      map.remove();
+      mapRef.current = null;
     };
-    // Intentionally only re-run if the key/container identity changes —
-    // location/theme updates below are handled without recreating the map.
+    // Recreate only when the theme (style URL) changes — location/aqi updates
+    // are handled below without tearing the map down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [theme]);
 
   // Recenter the existing map when the active location changes.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !location) return;
-    map.setCenter({ lat: location.lat, lng: location.lon });
-    if (map.getZoom() < 9) map.setZoom(10);
-  }, [location?.lat, location?.lon]);
+    if (!map || !location || status !== 'ready') return;
+    map.easeTo({ center: [location.lon, location.lat], zoom: Math.max(map.getZoom(), 10), duration: 600 });
+  }, [location?.lat, location?.lon, status]);
 
-  // Re-draw the marker whenever position or AQI severity color changes.
+  // Keep the marker in sync with position and AQI severity color.
   useEffect(() => {
     const map = mapRef.current;
-    const mappls = mapplsRef.current;
-    if (!map || !mappls || !location) return;
+    if (!map || !location || status !== 'ready') return;
 
-    if (markerRef.current) {
-      mappls.remove({ map, layer: markerRef.current });
-      markerRef.current = null;
+    if (!markerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'aqi-pin-wrap';
+      markerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([location.lon, location.lat])
+        .addTo(map);
+    } else {
+      markerRef.current.setLngLat([location.lon, location.lat]);
     }
 
-    markerRef.current = new mappls.Marker({
-      map,
-      position: { lat: location.lat, lng: location.lon },
-      html: `<div class="aqi-pin" style="--pin-color:${level.color}">${aqi ?? '—'}</div>`,
-      width: 46,
-      height: 46,
-      offset: [0, 0],
-    });
+    markerRef.current.getElement().innerHTML = `<div class="aqi-pin" style="--pin-color:${level.color}">${aqi ?? '—'}</div>`;
   }, [status, location?.lat, location?.lon, aqi, level.color]);
 
   if (!location) return <MapSkeleton />;
-  if (status === 'missing-key') return <MissingKeyNotice />;
 
   return (
     <div
@@ -218,10 +177,7 @@ export default function MapView({ location, aqi, theme, onPick, loading = false 
         loading && 'opacity-70'
       )}
     >
-      <div
-        ref={containerRef}
-        className={cn('h-full w-full', theme === 'dark' && 'map-canvas-dark')}
-      />
+      <div ref={containerRef} className="h-full w-full" />
 
       {status === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center bg-void/40">
@@ -230,9 +186,7 @@ export default function MapView({ location, aqi, theme, onPick, loading = false 
       )}
       {status === 'error' && (
         <div className="absolute inset-0 flex items-center justify-center bg-void/60 px-6 text-center">
-          <p className="text-xs text-muted">
-            Couldn't load the map right now. Check your connection or Mappls API key.
-          </p>
+          <p className="text-xs text-muted">Couldn't load the map right now. Check your connection.</p>
         </div>
       )}
 
