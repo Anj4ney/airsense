@@ -1,0 +1,10 @@
+- https://open-meteo.com
+- https://www.bigdatacloud.com
+- https://www.openstreetmap.org/copyright
+- https://console.groq.com
+- https://www.airnow.gov/aqi/aqi-basics/
+- https://react.dev
+- https://vitejs.dev
+- https://tailwindcss.com
+- https://recharts.org
+- https://expressjs.com
