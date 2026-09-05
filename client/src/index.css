@@ -137,6 +137,17 @@
     color: #5b6478;
   }
 
+  /* dropdown surface (Compare view profile selects) — must flip with theme,
+     unlike a raw bg-ink utility which stays dark in light mode. */
+  .select-surface {
+    background: #10141f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  html:not(.dark) .select-surface {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(20, 26, 42, 0.12);
+  }
+
   /* quiet pill — the reference's status badge language:
      small rounded-full chip with a soft tinted background */
   .pill {
