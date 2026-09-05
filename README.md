@@ -8,7 +8,7 @@
 
 ---
 
-## ⚡ Judge Quick Demo (under 90 seconds)
+##  Judge Quick Demo (under 90 seconds)
 
 1. **Click a persona card** ( Asthma Patient /  Outdoor Athlete /  Parent of Toddler) — watch the advisory rewrite itself instantly. Same air, different advice.
 2. **Hit the “Compare profiles” tab** — two advisories side-by-side for the *exact same live readings*. Only the person changes. This is the core value prop.
