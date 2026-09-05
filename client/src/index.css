@@ -192,43 +192,9 @@ html:not(.dark) .skeleton::after {
 }
 
 /* ── Leaflet integration (dark tiles + dark controls + AQI pin) ──────────── */
-.leaflet-container {
-  background: #0a0e17;
-  font-family: inherit;
-}
-.leaflet-control-attribution {
-  background: rgba(10, 14, 23, 0.78) !important;
-  color: #8b93a6 !important;
-  font-size: 10px !important;
-}
-html:not(.dark) .leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.82) !important;
-  color: #5b6478 !important;
-}
-.leaflet-bar a {
-  background: rgba(16, 20, 31, 0.94);
-  color: #f5f6f8;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-html:not(.dark) .leaflet-bar a {
-  background: rgba(255, 255, 255, 0.95);
-  color: #141a2a;
-}
-.leaflet-bar a:hover {
-  background: rgba(30, 36, 52, 0.96);
-}
-html:not(.dark) .leaflet-bar a:hover {
-  background: #eef1f7;
-}
-
-/* AQI severity pin — colors injected from aqiTheme.js via --pin-color */
-.airsense-pin-wrap {
-  background: transparent;
-  border: none;
-}
-
-/* OpenStreetMap raster tiles recolored for dark mode (no API-key basemaps) */
-.osm-tiles-dark {
+/* Mappls map canvas recolored for dark mode (Mappls' vector style is fixed;
+   this CSS filter approximates a dark look on top of it) */
+.map-canvas-dark {
   filter: grayscale(0.5) invert(0.93) hue-rotate(187deg) brightness(0.82)
     contrast(0.95) saturate(0.7);
 }
