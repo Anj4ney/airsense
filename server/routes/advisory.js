@@ -74,7 +74,7 @@ router.post('/', async (req, res) => {
     });
   }
 
-  const model = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
+  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
