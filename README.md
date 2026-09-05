@@ -10,7 +10,7 @@
 
 ## ⚡ Judge Quick Demo (under 90 seconds)
 
-1. **Click a persona card** (🫁 Asthma Patient / 🏃 Outdoor Athlete / 👶 Parent of Toddler) — watch the advisory rewrite itself instantly. Same air, different advice.
+1. **Click a persona card** ( Asthma Patient /  Outdoor Athlete /  Parent of Toddler) — watch the advisory rewrite itself instantly. Same air, different advice.
 2. **Hit the “Compare profiles” tab** — two advisories side-by-side for the *exact same live readings*. Only the person changes. This is the core value prop.
 3. **Drag the What-if AQI slider up to ~180** — the advisory escalates in real time. Proof the reasoning is dynamic, not cached or scripted (drag further to see the banner-worthy tiers).
 
@@ -18,7 +18,7 @@ No setup, no keys needed for any of the above — everything you see is live dat
 
 ---
 
-## 🚀 Run locally (one command)
+##  Run locally (one command)
 
 ```bash
 npm install && npm run dev
@@ -47,7 +47,7 @@ cp .env.example .env
 
 ---
 
-## 🧠 How it works
+##  How it works
 
 ```
  Browser (React + Vite)
@@ -66,7 +66,7 @@ cp .env.example .env
 
 ---
 
-## ✨ Feature checklist
+##  Feature checklist
 
 - City search (autocomplete) + “Use my location” geolocation + tap-anywhere-on-map
 - Live temperature, humidity, wind, AQI — color-coded by severity, auto-refresh every 5 min with a “last updated Xs ago” ticker
@@ -84,7 +84,7 @@ cp .env.example .env
 
 ---
 
-## ☁️ Deployment
+##  Deployment
 
 ### Option A — two free services (recommended)
 
@@ -107,7 +107,7 @@ Deploy that one service (Render/Railway) with `GROQ_API_KEY` — done.
 
 ---
 
-## 📁 Project structure
+##  Project structure
 
 ```
 airsense/
@@ -132,13 +132,13 @@ airsense/
 
 ---
 
-## 🛠 Troubleshooting
+##  Troubleshooting
 
 - **Port 3000/3001 busy** — set `PORT` for the server; Vite is strict on 3000 by design (change in `vite.config.js`).
 - **Geolocation denied** — the app falls back to live New Delhi data with a friendly notice; search or the map work regardless.
 - **“Smart rules” badge instead of “AI · Groq”** — no key configured or Groq errored; check `server/.env` and the terminal.
 - **Advisory seems slow on first load** — the Express server cold-starts in ~1s; the rule-based path is instant.
 
-## 📊 Data & credits
+##  Data & credits
 
 All environmental data: [Open-Meteo](https://open-meteo.com) (Forecast, Air Quality, Geocoding APIs — CC-BY 4.0, free, no key). Reverse geocoding: BigDataCloud free client endpoint. Map tiles: [OpenStreetMap](https://www.openstreetmap.org/copyright) (dark mode recolors them via CSS filter — no API-key basemaps anywhere). LLM: Groq free tier. Everything else runs in your browser.
