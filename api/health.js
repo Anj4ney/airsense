@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
     ok: true,
     service: 'airsense-api',
     llm: process.env.GROQ_API_KEY ? 'groq' : 'rule-based-fallback',
-    model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+    model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
     time: new Date().toISOString(),
   });
 };
